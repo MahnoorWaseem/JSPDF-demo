@@ -17,25 +17,25 @@ const data = [
   {
     id: 1,
     name: "Alice",
-    email:'jujjf' ,
-    age: 25,
-    address: 'fnjdnfj',
+    email: "",
+    age: null,
+    address: "abc 123",
     phone: "123-456-7890",
   },
   {
     id: 2,
     name: "Bob",
-    email: 'kmfkm',
-    age: 30,
-    address: 'mkrfekm',
+    email: null,
+    age: '',
+    address: "123 abc",
     phone: "234-567-8901",
   },
   {
     id: 3,
     name: "Charlie",
-    email: "charlie@example.com",
-    age: 35,
-    address: "789 Pine St",
+    email: "",
+    age: '',
+    address: null,
     phone: "345-678-9012",
   },
   {
@@ -114,7 +114,8 @@ const data = [
   // { id: 14, name: "David", email: "david@example.com", age: 40, address: "101 Maple St", phone: "456-789-0123" },
 ];
 
-function SimpleDataGrid2() {
+function SimpleDataGrid3() {
+
   const [selectedRows, setSelectedRows] = useState(null);
 
   const generatePDF = () => {
@@ -125,8 +126,6 @@ function SimpleDataGrid2() {
 
     const footerImage = new Image();
     footerImage.src = "./footer.png";
-
-    let cleanedHeaders, cleanedData;
 
     // Function to add header starting from the second page
     const addHeader = (doc) => {
@@ -169,12 +168,9 @@ function SimpleDataGrid2() {
       footerHeight = 10
     ) {
       // Calculate space remaining on the page
-      const usedSpace =  doc.lastAutoTable.finalY ; // Start from finalY if provided
-      
+      const usedSpace = doc.lastAutoTable.finalY; // Start from finalY if provided
       const spaceRemaining =
         doc.internal.pageSize.height - usedSpace - footerHeight; // Remaining space minus footer height
-
-        console.log('table data',tableData)
 
       // Calculate total table height
       const tableDataLength = tableData.length;
@@ -201,8 +197,7 @@ function SimpleDataGrid2() {
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.text(title, 10, startY);
-
-      console.log('data of table in add table func;', tableData)
+      console.log('auto table table data', tableData);
 
       // Render the table
       doc.autoTable({
@@ -215,39 +210,25 @@ function SimpleDataGrid2() {
       });
     }
 
-
-    // Function to clean table data and headers
-    function cleanTableData(headers, data) {
-      const columnCount = headers.length;
-    
-      // Find columns that are not entirely null
-      const validColumns = Array.from({ length: columnCount }, (_, colIndex) => {
-        // Check if any value in the column is not null or undefined
-        return data.some(
-          (row) => row[colIndex] !== null && row[colIndex] !== undefined
-        );
-      });
-    
-      // Filter headers and rows to only include valid columns
-      const cleanedHeaders = headers.filter((_, index) => validColumns[index]);
-      const cleanedDataArray = data.map((row) =>
-        row.filter((_, index) => validColumns[index])
-      );
-    
-      // Convert rows into an array of objects using the cleaned headers
-      const cleanedData = cleanedDataArray.map((row) =>
-        row.reduce((acc, value, index) => {
-          acc[cleanedHeaders[index]] = value; // Map headers to row values
-          return acc;
-        }, {})
-      ); 
-    
-      console.log("Cleaned Headers:", cleanedHeaders);
-      console.log("Cleaned Data:", cleanedData);    //giving values
-    
-      return { cleanedHeaders, cleanedData };       //returning undefined
+    function removeNullColumns(data, header) {
+        // Iterate through the columns of the data
+        for (let col = 0; col < data[0].length; col++) {
+            // Check if the current column contains only null values
+            const isNullColumn = data.every(row => row[col] === null || row[col] === "");
+            
+            // If the column is null in every row, remove it from the data and the header
+            if (isNullColumn) {
+                // Remove the column from all rows
+                for (let row of data) {
+                    row.splice(col, 1);
+                }
+                // Remove the corresponding header
+                header.splice(col, 1);
+                col--; // Adjust index after removing the column
+            }
+        }
+        return { updatedData: data, updatedHeader: header };
     }
-    
 
     // ** First Page **
     doc.setLineWidth(0.5);
@@ -270,49 +251,44 @@ function SimpleDataGrid2() {
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.text("Personal Info", 10, 25); // Heading
+    const table0Data =
+    selectedRows != null
+      ? selectedRows.map((row) => [row.id, row.name, row.age])
+      : data.map((row) => [row.id, row.name, row.age]);
+
+    const table0Header = ['Id', 'Name', 'Age']
+
+      let result = removeNullColumns(table0Data, table0Header);
     doc.autoTable({
       startY: 35,
-      head: [["ID", "Name", "Age"]],
-      body:
-        selectedRows != null
-          ? selectedRows.map((row) => [row.id, row.name, row.age])
-          : data.map((row) => [row.id, row.name, row.age]),
+      head: [result.updatedHeader],
+      body: result.updatedData,
       theme: "striped",
       styles: { halign: "center" },
       headStyles: { fillColor: [100, 150, 255] }, // Light blue header
     });
 
     // Table 2
-    let table2Header = ["ID", "Email", "Phone"];
-    let table2Data =
+    const table1Header = ["ID", "Email", "Phone"];
+    const table1Data =
       selectedRows != null
         ? selectedRows.map((row) => [row.id, row.email, row.phone])
         : data.map((row) => [row.id, row.email, row.phone]);
 
-    // Clean the data and headers
-    ({ cleanedHeaders, cleanedData } = cleanTableData(table2Header, table2Data));
-// let result = cleanTableData(table2Header, table2Data)
-// console.log('res',result)
+        result = removeNullColumns(table1Data, table1Header);
+        // console.log(result.updatedHeader); // ['Id']
+        // console.log(result.updatedData);
 
-console.log("Cleaned Headers 2:", cleanedHeaders); //printing undefined
-      console.log("Cleaned Data 2:", cleanedData); 
-    
-  // const finalCleanedData1 = cleanedData.map((row) => [row.id, row.email, row.phone]);
-
-// Pass the cleaned data and headers to the table function
-addTableWithCheck(doc, cleanedHeaders, cleanedData, "Contact");
+    addTableWithCheck(doc, result.updatedHeader, result.updatedData, "Contact");
 
     // Table 3
-    const table3Header = ["ID", "University"];
-    const table3Data =
+    const table2Header = ["ID", "Name" , 'University'];
+    const table2Data =
       selectedRows != null
-        ? selectedRows.map((row) => [row.id, row.address])
-        : data.map((row) => [row.id, row.address]);
-
-      // Clean the data and headers
- ({ cleanedHeaders, cleanedData } = cleanTableData(table3Header, table3Data));
-// Pass the cleaned data and headers to the table function
-addTableWithCheck(doc, cleanedHeaders, cleanedData, "Education");
+        ? selectedRows.map((row) => [row.id,row.name, row.address])
+        : data.map((row) => [row.id, row.name, row.address]);
+        result = removeNullColumns(table2Data, table2Header);
+    addTableWithCheck(doc, result.updatedHeader, result.updatedData, "Education");
 
     // Add Headers and Footers to All Pages (Starting from Page 2)
     const totalPages = doc.internal.getNumberOfPages();
@@ -372,4 +348,4 @@ addTableWithCheck(doc, cleanedHeaders, cleanedData, "Education");
   );
 }
 
-export default SimpleDataGrid2;
+export default SimpleDataGrid3;
