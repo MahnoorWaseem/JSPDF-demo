@@ -9,8 +9,8 @@ function App() {
     <div>
       <h1>Material-UI Table to PDF</h1>
       {/* <MyTable /> */}
-      <SimpleDataGrid />
-      {/* <SimpleDataGrid2 /> */}
+      {/* <SimpleDataGrid /> */}
+      <SimpleDataGrid2 />
 
     </div>
   );
